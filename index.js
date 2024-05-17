@@ -1,83 +1,65 @@
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
-import passport from "passport";
-import session from "express-session";
-import connectMongo from "connect-mongodb-session";
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
-import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
-import { buildContext } from "graphql-passport";
+
 import dotenv from "dotenv";
-import mergedResolvers from "./resolvers/index.js";
-import mergedTypeDefs from "./typeDefs/index.js";
-import { connectDatabase } from "./database/connect-db.js";
-import { configurePassport } from "./passport/passport-config.js";
+import axios from "axios";
 
 dotenv.config();
-configurePassport();
 
-// Create Express app
-const app = express();
+async function startServer() {
+  const app = express();
+  const server = new ApolloServer({
+    typeDefs: `
+      type User{
+        id:ID!
+        name:String!
+        username:String!
+        email:String!
+        
+        website:String!
+       
+      }
+      type Todo {
+        id: ID!
+        title: String!
+        completed: Boolean
+      }
 
-// Connect to MongoDB
-await connectDatabase();
+      type Query {
+        getTodos: [Todo]
+        getAllUsers :[User]
+        getUser(id:ID!):User
+      }
 
-// Configure MongoDB session store
-const MongoDBStore = connectMongo(session);
-const store = new MongoDBStore({
-  uri: process.env.MONGO_URI,
-  collection: "sessions",
-});
-store.on("error", (err) => console.log(err));
-
-// Express middleware setup
-app.use(express.urlencoded({ extended: true }));
-app.use(cors());
-app.use(morgan("tiny"));
-app.use(express.json());
-app.use(passport.initialize());
-app.use(passport.session());
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET,
-    resave: false, //this option specifies whether to save the session to the store on every request
-    saveUninitialized: false,
-    cookie: {
-      maxAge: process.env.EXPIRES,
-      httpOnly: true,
-      secure: true,
+    `,
+    resolvers: {
+      Query: {
+        getTodos: async () =>
+          (await axios.get("https://jsonplaceholder.typicode.com/todos")).data,
+        getAllUsers: async () =>
+          (await axios.get("https://jsonplaceholder.typicode.com/users")).data,
+        getUser: async (_, { id }) =>
+          (await axios.get(`https://jsonplaceholder.typicode.com/users/${id}`))
+            .data,
+      },
     },
-    store: store,
-  })
-);
+    introspection: true, // Enable introspection
+  });
 
-// Apollo Server setup
-const server = new ApolloServer({
-  typeDefs: mergedTypeDefs,
-  resolvers: mergedResolvers,
-  plugins: [ApolloServerPluginDrainHttpServer({ httpServer: app })],
-});
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+  app.use(cors());
+  app.use(morgan("dev"));
 
-// Start Apollo Server
-await server.start();
+  await server.start();
+  app.use("/graphql", expressMiddleware(server));
 
-// Apply Apollo Server middleware to Express app
-app.use(
-  "/",
-  cors({
-    origin: process.env.BASE_URL,
-    credentials: true,
-  }),
-  express.json(),
-  express.urlencoded({ extended: true }),
-  expressMiddleware(server, {
-    context: async ({ req, res }) => buildContext({ req, res }),
-  })
-);
+  app.listen(process.env.PORT, () =>
+    console.log(`Server started at PORT: ${process.env.PORT}`)
+  );
+}
 
-// Start Express server
-const port = process.env.PORT;
-app.listen(port, () => {
-  console.log(`Server ready at http://localhost:${port}`);
-});
+startServer();
