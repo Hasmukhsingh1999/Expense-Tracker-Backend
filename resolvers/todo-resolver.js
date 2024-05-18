@@ -33,6 +33,22 @@ const todoResolvers = {
         throw new Error("Failed to create todo");
       }
     },
+    updateTodo: async (_, { id, input }) => {
+      try {
+        const updatedTodo = await Todo.findByIdAndUpdate(
+          id,
+          { $set: input },
+          { new: true }
+        );
+        if (!updatedTodo) {
+          throw new Error("Todo not found");
+        }
+        console.log("Updated Todo:", updatedTodo);
+      } catch (error) {
+        console.error("Error fetching todos:", error); // Debugging line
+        throw new Error("Failed to fetch todos");
+      }
+    },
   },
 };
 

@@ -1,5 +1,5 @@
 const todoTypeDefs = `#graphql
- type User {
+  type User {
     id: ID!
     username: String!
   }
@@ -10,14 +10,20 @@ const todoTypeDefs = `#graphql
     completed: Boolean
     user: User!  # Add the user field to the Todo type
   }
+
   type Mutation {
-    createTodo(input:CreateTodoInput!):Todo
-    # updateTodo(input:UpdateTodoInput!):Todo
-    # deleteTodo(input:DeleteTodoInput!):Todo
+    createTodo(input: CreateTodoInput!): Todo
+    updateTodo(id: ID!, input: UpdateTodoInput!): Todo
+    # deleteTodo(input: DeleteTodoInput!): Todo
   }
 
-  input CreateTodoInput{
+  input CreateTodoInput {
     title: String!
+    completed: Boolean
+  }
+
+  input UpdateTodoInput {
+    title: String
     completed: Boolean
   }
 
