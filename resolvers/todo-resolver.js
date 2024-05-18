@@ -1,31 +1,37 @@
 import axios from "axios";
+import { User } from "../models/user-model.js";
+import { Todo } from "../models/todo-model.js";
+
 const todoResolvers = {
-  Todo: {
-    user: async (todo) => {
-      const response = await axios.get(
-        `https://jsonplaceholder.typicode.com/users/${todo.userId}`
-      );
-      return response.data;
+  Query: {
+    getTodos: async (_, __, context) => {
+      try {
+        return await Todo.find();
+      } catch (error) {
+        console.error("Error fetching todos:", error); // Debugging line
+        throw new Error("Failed to fetch todos");
+      }
     },
   },
-  Query: {
-    getTodos: async () => {
-      const response = await axios.get(
-        "https://jsonplaceholder.typicode.com/todos"
-      );
-      return response.data;
-    },
-    getAllUsers: async () => {
-      const response = await axios.get(
-        "https://jsonplaceholder.typicode.com/users"
-      );
-      return response.data;
-    },
-    getUser: async (_, { id }) => {
-      const response = await axios.get(
-        `https://jsonplaceholder.typicode.com/users/${id}`
-      );
-      return response.data;
+  Mutation: {
+    createTodo: async (_, { input }, context) => {
+      console.log("Input:", input); // Debugging line
+
+      const { title, completed } = input;
+
+      const newTodo = new Todo({
+        title,
+        completed: completed ?? false,
+      });
+
+      try {
+        await newTodo.save(); // Save the newTodo to the database
+        console.log("New Todo:", newTodo); // Debugging line
+        return newTodo; // Return the newly created Todo
+      } catch (error) {
+        console.error("Error creating todo:", error); // Debugging line
+        throw new Error("Failed to create todo");
+      }
     },
   },
 };

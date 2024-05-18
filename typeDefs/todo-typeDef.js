@@ -1,24 +1,28 @@
 const todoTypeDefs = `#graphql
-  type User {
+ type User {
     id: ID!
-    name: String!
     username: String!
-    email: String!
-    website: String!
   }
 
   type Todo {
     id: ID!
     title: String!
     completed: Boolean
-    user: User
-    userId:ID!
+    user: User!  # Add the user field to the Todo type
+  }
+  type Mutation {
+    createTodo(input:CreateTodoInput!):Todo
+    # updateTodo(input:UpdateTodoInput!):Todo
+    # deleteTodo(input:DeleteTodoInput!):Todo
+  }
+
+  input CreateTodoInput{
+    title: String!
+    completed: Boolean
   }
 
   type Query {
-    getTodos: [Todo]
-    getAllUsers: [User]
-    getUser(id: ID!): User
+    getTodos: [Todo!]
   }
 `;
 
