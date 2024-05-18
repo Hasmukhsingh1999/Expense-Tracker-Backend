@@ -1,4 +1,4 @@
-# Understanding GraphQL: \
+# Understanding GraphQL: 
 
 ## What is GraphQL?
 
