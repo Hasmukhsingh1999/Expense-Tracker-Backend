@@ -4,71 +4,23 @@ import morgan from "morgan";
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
 import dotenv from "dotenv";
-import axios from "axios";
+
+import { mergedResolvers } from "./resolvers/index.js";
+import { mergedTypeDefs } from "./typeDefs/index.js";
+import { connectDatabase } from "./database/connect-db.js";
+import { context } from "./utils/context.js";
 
 dotenv.config();
 
-const typeDefs = `
-  type User {
-    id: ID!
-    name: String!
-    username: String!
-    email: String!
-    website: String!
-  }
-
-  type Todo {
-    id: ID!
-    title: String!
-    completed: Boolean
-    user: User
-    userId:ID!
-  }
-
-  type Query {
-    getTodos: [Todo]
-    getAllUsers: [User]
-    getUser(id: ID!): User
-  }
-`;
-
-const resolvers = {
-  Todo: {
-    user: async (todo) => {
-      const response = await axios.get(
-        `https://jsonplaceholder.typicode.com/users/${todo.userId}`
-      );
-      return response.data;
-    },
-  },
-  Query: {
-    getTodos: async () => {
-      const response = await axios.get(
-        "https://jsonplaceholder.typicode.com/todos"
-      );
-      return response.data;
-    },
-    getAllUsers: async () => {
-      const response = await axios.get(
-        "https://jsonplaceholder.typicode.com/users"
-      );
-      return response.data;
-    },
-    getUser: async (_, { id }) => {
-      const response = await axios.get(
-        `https://jsonplaceholder.typicode.com/users/${id}`
-      );
-      return response.data;
-    },
-  },
-};
+await connectDatabase();
 
 async function startServer() {
   const app = express();
   const server = new ApolloServer({
-    typeDefs,
-    resolvers,
+    typeDefs: mergedTypeDefs,
+    resolvers: mergedResolvers,
     introspection: true, // Enable introspection
+    context,
   });
 
   app.use(express.json());
